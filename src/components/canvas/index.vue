@@ -1,8 +1,11 @@
 <template>
   <div>
     <canvas style="margin-left: 200px" ref="canvas" :width="width" :height="height"></canvas>
-    <div @click="handleClick('rect')">画图</div>
+    <div @click="handleClick('line')">画笔</div>
+    <div @click="handleClick('rect')">矩形</div>
     <div @click="handleClick('move')">选择</div>
+    <div @click="clear">清空</div>
+    <div @click="redraw">重绘</div>
   </div>
 </template>
 
@@ -39,11 +42,17 @@ export default {
       })
     },
     moveCallback (data, ...val) {
-      // console.log(data, val)
-      this.palette.getImageData()
+      console.log(data, val)
+      // this.palette.getImageData()
     },
     handleClick (val) {
       this.palette.test(val)
+    },
+    clear (val) {
+      this.palette.clear(val)
+    },
+    redraw (val) {
+      this.palette.reDraw(val)
     }
   }
 }
