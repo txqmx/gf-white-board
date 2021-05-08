@@ -1,11 +1,6 @@
 <template>
   <div>
-    <canvas style="margin-left: 200px" ref="canvas" :width="width" :height="height"></canvas>
-    <div @click="handleClick('line')">画笔</div>
-    <div @click="handleClick('rect')">矩形</div>
-    <div @click="handleClick('move')">选择</div>
-    <div @click="clear">清空</div>
-    <div @click="redraw">重绘</div>
+    <canvas ref="canvas" :width="width" :height="height"></canvas>
   </div>
 </template>
 
@@ -25,7 +20,10 @@ export default {
   },
   data () {
     return {
-      palette: ''
+      palette: '',
+      drawColor: '#000000',
+      drawType: 'line',
+      lineWidth: 2
     }
   },
   mounted () {
@@ -45,14 +43,14 @@ export default {
       console.log(data, val)
       // this.palette.getImageData()
     },
-    handleClick (val) {
-      this.palette.test(val)
+    // 改变绘制条件 type, color, lineWidth, sides
+    changeWay ({ type, color, lineWidth, sides }) {
+      this.palette.changeWay({ type, color, lineWidth, sides })
     },
-    clear (val) {
-      this.palette.clear(val)
-    },
-    redraw (val) {
-      this.palette.reDraw(val)
+    // 切换工具
+    selectTool ({ action }) {
+      // this.moveCallback(action)
+      // this.palette[action]()
     }
   }
 }

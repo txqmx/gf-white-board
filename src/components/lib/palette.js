@@ -40,7 +40,6 @@ class Palette {
     this.x = e.offsetX
     this.y = e.offsetY
     this.lastDot = [e.offsetX, e.offsetY]
-    this.canvas.addEventListener('mousemove', this.bindMousemove)
     if (this.drawType === 'line') {
       this.drawItem = new Line(this.drawColor, this.lineWidth, [this.lastDot])
     } else if (this.drawType === 'rect') {
@@ -58,6 +57,7 @@ class Palette {
       }
       this.reDraw()
     }
+    this.canvas.addEventListener('mousemove', this.bindMousemove)
   }
 
   // 鼠标移动
@@ -136,10 +136,7 @@ class Palette {
     console.log(this.imgData)
   }
 
-  clear () {
-    this.paint.clearRect(0, 0, this.width, this.height)
-  }
-
+  // 重绘
   reDraw () {
     this.paint.clearRect(0, 0, this.width, this.height)
     for (const key in this.drawMap) {
@@ -148,8 +145,13 @@ class Palette {
     }
   }
 
-  test (val) {
-    this.drawType = val
+  // 绘制条件改变
+  changeWay ({ type, color, lineWidth, sides }) {
+    console.log(type)
+    this.drawType = type || this.drawType // 绘制形状
+    this.drawColor = color || this.drawColor // 绘制颜色
+    this.lineWidth = lineWidth || this.lineWidth // 线宽
+    this.sides = sides || this.sides // 边数
   }
 }
 
