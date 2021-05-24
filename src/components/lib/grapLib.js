@@ -1,9 +1,9 @@
-import { uuid } from './utils'
+// import { uuid } from './utils'
 
 class Line {
   constructor (lineColor, lineWidth, points, id) {
     this.type = 'line'
-    this.id = id || uuid()
+    this.id = id || new Date().getTime()
     this.lineColor = lineColor
     this.lineWidth = lineWidth
     this.points = points || []
@@ -52,7 +52,7 @@ class Line {
 class Rect {
   constructor (lineColor, lineWidth, startDot, id) {
     this.type = 'rect'
-    this.id = id || uuid()
+    this.id = id || new Date().getTime()
     this.lineColor = lineColor
     this.lineWidth = lineWidth
     this.startDot = startDot || []

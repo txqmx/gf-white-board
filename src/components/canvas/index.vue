@@ -49,8 +49,9 @@ export default {
     },
     // 切换工具
     selectTool ({ action }) {
+      console.log(action)
       // this.moveCallback(action)
-      // this.palette[action]()
+      this.palette[action]()
     }
   }
 }

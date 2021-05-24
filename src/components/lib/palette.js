@@ -20,9 +20,11 @@ class Palette {
     this.bindMousemove = this.onMouseMove.bind(this) // 解决问题: 1.addEventListener 的this指向问题 2.bind绑定后为新函数，无法移除监听
     this.bindMousedown = this.onMouseDown.bind(this)
     this.bindMouseup = this.onMouseUp.bind(this)
-    this.drawItem = null
+    this.drawItem = null // 保存当前绘制图形实例
     this.drawMap = {}
-    this.selectItem = null
+    this.selectItem = null // 保存当前选中的图形实例
+    this.operateQue = [] // 保存操作类型，返回时需要判断
+    this.recycle = [] // 回收站
     this.init()
   }
 
@@ -40,22 +42,30 @@ class Palette {
     this.x = e.offsetX
     this.y = e.offsetY
     this.lastDot = [e.offsetX, e.offsetY]
-    if (this.drawType === 'line') {
-      this.drawItem = new Line(this.drawColor, this.lineWidth, [this.lastDot])
-    } else if (this.drawType === 'rect') {
-      this.drawItem = new Rect(this.drawColor, this.lineWidth, this.lastDot)
-    } else if (this.drawType === 'move') {
-      for (const key in this.drawMap) {
-        const item = this.drawMap[key]
-        if (item.isPointInPath(this.paint, this.x, this.y)) {
-          item.selected = true
-          this.selectItem = item
-          this.selectItem.setOffsetDot(this.lastDot)
-        } else {
-          item.selected = false
-        }
+    this.reSelect() // 边界处理
+    switch (this.drawType) {
+      case 'line': {
+        this.drawItem = new Line(this.drawColor, this.lineWidth, [this.lastDot])
+        break
       }
-      this.reDraw()
+      case 'rect': {
+        this.drawItem = new Rect(this.drawColor, this.lineWidth, this.lastDot)
+        break
+      }
+      case 'move': {
+        for (const key in this.drawMap) {
+          const item = this.drawMap[key]
+          if (item.isPointInPath(this.paint, this.x, this.y)) {
+            this.selectItem = item
+            this.selectItem.selected = true
+            this.selectItem.setOffsetDot(this.lastDot)
+          } else {
+            item.selected = false
+          }
+        }
+        this.reDraw()
+        break
+      }
     }
     this.canvas.addEventListener('mousemove', this.bindMousemove)
   }
@@ -88,8 +98,10 @@ class Palette {
       case 'move' : {
         // this.reSetImage()
         // this.selectItem.startDot = []
-        this.selectItem.drawMove(this.paint, nowDot[0], nowDot[1])
-        this.reDraw()
+        if (this.selectItem) {
+          this.selectItem.drawMove(this.paint, nowDot[0], nowDot[1])
+          this.reDraw()
+        }
         // this.lastDot = nowDot
       }
     }
@@ -99,19 +111,25 @@ class Palette {
   onMouseUp (e) {
     if (this.isClickCanvas) {
       this.isClickCanvas = false
+      this.reSelect()
       this.canvas.removeEventListener('mousemove', this.bindMousemove)
-      if (this.drawType !== 'move' && this.isMoveCanvas) { // 鼠标没有移动不保存
+      if (this.isMoveCanvas) { // 鼠标没有移动不保存
         this.isMoveCanvas = false
-        // this.moveCallback('gatherImage')
-        const id = this.drawItem.id
-        this.drawMap[id] = this.drawItem
-        this.drawItem = null
-        console.log(this.drawMap)
+        this.operateQue.push(this.drawType)
+        switch (this.drawType) {
+          case 'line':
+          case 'rect': {
+            const id = this.drawItem.id
+            this.drawMap[id] = this.drawItem
+            break
+          }
+          case 'move': {
+            break
+          }
+        }
+        this.gatherImage()
       }
-      if (this.drawType === 'move') {
-        // this.selectItem.startDot = this.lastDot
-      }
-      this.gatherImage()
+      this.drawItem = null
     }
   }
 
@@ -131,11 +149,6 @@ class Palette {
     }
   }
 
-  // 获取数据
-  getImageData () {
-    console.log(this.imgData)
-  }
-
   // 重绘
   reDraw () {
     this.paint.clearRect(0, 0, this.width, this.height)
@@ -147,11 +160,49 @@ class Palette {
 
   // 绘制条件改变
   changeWay ({ type, color, lineWidth, sides }) {
-    console.log(type)
+    this.reSelect()
     this.drawType = type || this.drawType // 绘制形状
     this.drawColor = color || this.drawColor // 绘制颜色
     this.lineWidth = lineWidth || this.lineWidth // 线宽
     this.sides = sides || this.sides // 边数
+  }
+
+  // 重置选中状态
+  reSelect () {
+    if (this.selectItem) { // 边界判断
+      for (const key in this.drawMap) {
+        const item = this.drawMap[key]
+        item.selected = false
+      }
+      this.selectItem = null
+      this.reDraw()
+    }
+  }
+
+  // 清屏
+  clear () {
+    // 清屏后不能再恢复了
+    this.imgData = []
+    this.drawMap = {}
+    this.operateQue = []
+    this.paint.clearRect(0, 0, this.width, this.height)
+    this.paint.fillStyle = '#fff'
+    this.paint.fillRect(0, 0, this.width, this.height)
+    this.gatherImage()
+  }
+
+  // 撤回
+  back () {
+    if (--this.index < 0) {
+      this.index = 0
+      return
+    }
+    if (this.operateQue[this.operateQue.length - 1] !== 'move') {
+      const lastId = Object.keys(this.drawMap)[Object.keys(this.drawMap).length - 1]
+      delete this.drawMap[lastId]
+    }
+    this.paint.putImageData(this.imgData[this.index], 0, 0)
+    this.operateQue.pop()
   }
 }
 

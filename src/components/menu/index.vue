@@ -109,7 +109,7 @@ export default {
           break
         case 'back':
           this.$emit('selectTool', {
-            action: 'cancel'
+            action: 'back'
           })
           break
         default:
