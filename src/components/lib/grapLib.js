@@ -12,8 +12,8 @@ class Line {
 
   // 判断点击是否在该图形中
   isPointInPath (canvas, x, y) {
-    // this.reDraw(canvas, false)
-    return false
+    this.reDraw(canvas, false)
+    return canvas.isPointInPath(x, y)
   }
 
   // 绘制线条

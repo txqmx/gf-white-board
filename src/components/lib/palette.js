@@ -42,7 +42,6 @@ class Palette {
     this.x = e.offsetX
     this.y = e.offsetY
     this.lastDot = [e.offsetX, e.offsetY]
-    this.reSelect() // 边界处理
     switch (this.drawType) {
       case 'line': {
         this.drawItem = new Line(this.drawColor, this.lineWidth, [this.lastDot])
@@ -52,13 +51,16 @@ class Palette {
         this.drawItem = new Rect(this.drawColor, this.lineWidth, this.lastDot)
         break
       }
+      case 'eraser':
       case 'move': {
         for (const key in this.drawMap) {
           const item = this.drawMap[key]
           if (item.isPointInPath(this.paint, this.x, this.y)) {
             this.selectItem = item
             this.selectItem.selected = true
-            this.selectItem.setOffsetDot(this.lastDot)
+            if (this.selectItem.setOffsetDot) {
+              this.selectItem.setOffsetDot(this.lastDot)
+            }
           } else {
             item.selected = false
           }
@@ -98,11 +100,12 @@ class Palette {
       case 'move' : {
         // this.reSetImage()
         // this.selectItem.startDot = []
-        if (this.selectItem) {
+        if (this.selectItem && this.selectItem.type !== 'line') {
           this.selectItem.drawMove(this.paint, nowDot[0], nowDot[1])
           this.reDraw()
         }
         // this.lastDot = nowDot
+        break
       }
     }
   }
@@ -111,23 +114,33 @@ class Palette {
   onMouseUp (e) {
     if (this.isClickCanvas) {
       this.isClickCanvas = false
-      this.reSelect()
       this.canvas.removeEventListener('mousemove', this.bindMousemove)
+      if (this.drawType === 'eraser') {
+        if (this.selectItem) {
+          this.operateQue.push(this.drawType)
+          this.eraser(this.selectItem.id)
+          this.gatherImage()
+          return
+        }
+      }
+      this.reSelect()
       if (this.isMoveCanvas) { // 鼠标没有移动不保存
         this.isMoveCanvas = false
-        this.operateQue.push(this.drawType)
         switch (this.drawType) {
           case 'line':
           case 'rect': {
             const id = this.drawItem.id
             this.drawMap[id] = this.drawItem
+            this.operateQue.push(this.drawType)
+            this.gatherImage()
             break
           }
           case 'move': {
+            this.operateQue.push(this.drawType)
+            this.gatherImage()
             break
           }
         }
-        this.gatherImage()
       }
       this.drawItem = null
     }
@@ -160,6 +173,7 @@ class Palette {
 
   // 绘制条件改变
   changeWay ({ type, color, lineWidth, sides }) {
+    console.log(type)
     this.reSelect()
     this.drawType = type || this.drawType // 绘制形状
     this.drawColor = color || this.drawColor // 绘制颜色
@@ -175,6 +189,19 @@ class Palette {
         item.selected = false
       }
       this.selectItem = null
+      this.reDraw()
+    }
+  }
+
+  // 删除元素
+  eraser (id) {
+    if (this.drawMap[id]) {
+      this.reSelect()
+      this.recycle.push({
+        id: id,
+        content: this.drawMap[id]
+      })
+      delete this.drawMap[id]
       this.reDraw()
     }
   }
@@ -197,12 +224,22 @@ class Palette {
       this.index = 0
       return
     }
-    if (this.operateQue[this.operateQue.length - 1] !== 'move') {
+    if (this.operateQue[this.operateQue.length - 1] === 'line' || this.operateQue[this.operateQue.length - 1] === 'rect') {
       const lastId = Object.keys(this.drawMap)[Object.keys(this.drawMap).length - 1]
       delete this.drawMap[lastId]
+      this.operateQue.pop()
+      this.paint.putImageData(this.imgData[this.index], 0, 0)
+    } else if (this.operateQue[this.operateQue.length - 1] === 'eraser') {
+      const delItem = this.recycle.pop()
+      if (delItem) {
+        this.drawMap[delItem.id] = delItem.content
+        this.operateQue.pop()
+        this.paint.putImageData(this.imgData[this.index], 0, 0)
+      }
+    } else if (this.operateQue[this.operateQue.length - 1] === 'move') {
+      this.operateQue.pop()
+      this.paint.putImageData(this.imgData[this.index], 0, 0)
     }
-    this.paint.putImageData(this.imgData[this.index], 0, 0)
-    this.operateQue.pop()
   }
 }
 
