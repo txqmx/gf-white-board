@@ -55,7 +55,8 @@ class Palette {
             this.selectItem = item
             this.selectItem.selected = true
             if (this.selectItem.setOffsetDot) {
-              this.selectItem.setOffsetDot(this.lastDot)
+              this.setOffsetDot(this.selectItem, this.lastDot)
+              this.moveCallback('setOffsetDot', this.selectItem, this.lastDot)
             }
           } else {
             item.selected = false
@@ -98,16 +99,22 @@ class Palette {
 
   drawing (drawItem, ...params) {
     if (drawItem.type === 'rect') {
-      if (!this.drawMap[drawItem.id]) {
-        this.drawMap[drawItem.id] = new Rect(drawItem.drawColor, drawItem.lineWidth, drawItem.startDot, drawItem.id)
+      if (!drawItem.drawing) {
+        if (!this.drawMap[drawItem.id]) {
+          this.drawMap[drawItem.id] = new Rect(drawItem.drawColor, drawItem.lineWidth, drawItem.startDot, drawItem.id)
+        }
+        drawItem = this.drawMap[drawItem.id]
       }
       this.reSetImage()
-      this.drawMap[drawItem.id].drawing(this.paint, ...params)
+      drawItem.drawing(this.paint, ...params)
     } else if (drawItem.type === 'line') {
-      if (!this.drawMap[drawItem.id]) {
-        this.drawMap[drawItem.id] = new Line(drawItem.drawColor, drawItem.lineWidth, drawItem.points, drawItem.id)
+      if (!drawItem.drawing) {
+        if (!this.drawMap[drawItem.id]) {
+          this.drawMap[drawItem.id] = new Line(drawItem.drawColor, drawItem.lineWidth, drawItem.points, drawItem.id)
+        }
+        drawItem = this.drawMap[drawItem.id]
       }
-      this.drawMap[drawItem.id].drawing(this.paint, ...params)
+      drawItem.drawing(this.paint, ...params)
     }
   }
 
@@ -119,6 +126,10 @@ class Palette {
   operateRecord (drawType) {
     this.operateQue.push(drawType)
     this.gatherImage()
+  }
+
+  setOffsetDot (drawItem, Dot) {
+    this.drawMap[drawItem.id].setOffsetDot(Dot)
   }
 
   // 鼠标抬起
@@ -142,7 +153,7 @@ class Palette {
           case 'line':
           case 'rect': {
             const id = this.drawItem.id
-            // this.drawMap[id] = this.drawItem
+            this.drawMap[id] = this.drawItem
             this.moveCallback('operateRecord', this.drawType, id, this.drawItem)
             this.operateRecord(this.drawType)
             break
