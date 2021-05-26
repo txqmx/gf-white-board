@@ -3,16 +3,14 @@ import { Line, Rect } from './grapLib'
 class Palette {
   constructor (canvas, { drawType, drawColor, lineWidth, moveCallback }) {
     this.canvas = canvas
-    this.width = canvas.width // 宽
-    this.height = canvas.height // 高
+    this.width = canvas.width // canvas宽
+    this.height = canvas.height // canvas高
     this.paint = canvas.getContext('2d')
     this.isClickCanvas = false // 是否点击canvas内部, 没看出作用
     this.isMoveCanvas = false // 鼠标是否有移动
     this.imgData = [] // 存储上一次的图像，用于撤回
     this.index = 0 // 记录当前显示的是第几帧
-    this.x = 0 // 鼠标按下时的 x 坐标
-    this.y = 0 // 鼠标按下时的 y 坐标
-    this.lastDot = [this.x, this.y] // 鼠标按下及每次移动后的坐标
+    this.lastDot = [0, 0] // 鼠标按下及每次移动后的坐标
     this.drawType = drawType || 'line' // 绘制形状
     this.drawColor = drawColor || '#000000' // 绘制颜色
     this.lineWidth = lineWidth || 2 // 线条宽度
@@ -39,8 +37,6 @@ class Palette {
   // 鼠标按下
   onMouseDown (e) {
     this.isClickCanvas = true
-    this.x = e.offsetX
-    this.y = e.offsetY
     this.lastDot = [e.offsetX, e.offsetY]
     switch (this.drawType) {
       case 'line': {
@@ -55,7 +51,7 @@ class Palette {
       case 'move': {
         for (const key in this.drawMap) {
           const item = this.drawMap[key]
-          if (item.isPointInPath(this.paint, this.x, this.y)) {
+          if (item.isPointInPath(this.paint, this.lastDot[0], this.lastDot[1])) {
             this.selectItem = item
             this.selectItem.selected = true
             if (this.selectItem.setOffsetDot) {
@@ -75,39 +71,54 @@ class Palette {
   // 鼠标移动
   onMouseMove (e) {
     this.isMoveCanvas = true
-    const endX = e.offsetX
-    const endY = e.offsetY
-    const width = endX - this.x
-    const height = endY - this.y
     const nowDot = [e.offsetX, e.offsetY] // 当前移动到的位置
+    const width = nowDot[0] - this.lastDot[0]
+    const height = nowDot[1] - this.lastDot[1]
     switch (this.drawType) {
       case 'line' : {
-        // const params = [this.lastDot, nowDot, this.lineWidth, this.drawColor]
-        // this.moveCallback('line', ...params)
-        this.drawItem.drawLine(this.paint, this.lastDot, nowDot)
+        this.drawing(this.drawItem, this.lastDot, nowDot)
+        this.moveCallback('drawing', this.drawItem, this.lastDot, nowDot)
         this.lastDot = nowDot
-        // this.line(...params)
         break
       }
       case 'rect' : {
-        // const params = [this.x, this.y, width, height, this.lineWidth, this.drawColor]
-        // this.moveCallback('rect', ...params)
-        // this.rect(...params)
-        this.reSetImage()
-        this.drawItem.drawRect(this.paint, width, height)
+        this.drawing(this.drawItem, width, height)
+        this.moveCallback('drawing', this.drawItem, width, height)
         break
       }
       case 'move' : {
-        // this.reSetImage()
-        // this.selectItem.startDot = []
         if (this.selectItem && this.selectItem.type !== 'line') {
-          this.selectItem.drawMove(this.paint, nowDot[0], nowDot[1])
-          this.reDraw()
+          this.drawMove(this.selectItem, nowDot[0], nowDot[1])
+          this.moveCallback('drawMove', this.selectItem, nowDot[0], nowDot[1])
         }
-        // this.lastDot = nowDot
         break
       }
     }
+  }
+
+  drawing (drawItem, ...params) {
+    if (drawItem.type === 'rect') {
+      if (!this.drawMap[drawItem.id]) {
+        this.drawMap[drawItem.id] = new Rect(drawItem.drawColor, drawItem.lineWidth, drawItem.startDot, drawItem.id)
+      }
+      this.reSetImage()
+      this.drawMap[drawItem.id].drawing(this.paint, ...params)
+    } else if (drawItem.type === 'line') {
+      if (!this.drawMap[drawItem.id]) {
+        this.drawMap[drawItem.id] = new Line(drawItem.drawColor, drawItem.lineWidth, drawItem.points, drawItem.id)
+      }
+      this.drawMap[drawItem.id].drawing(this.paint, ...params)
+    }
+  }
+
+  drawMove (drawItem, ...params) {
+    this.drawMap[drawItem.id].drawMove(this.paint, ...params)
+    this.reDraw()
+  }
+
+  operateRecord (drawType) {
+    this.operateQue.push(drawType)
+    this.gatherImage()
   }
 
   // 鼠标抬起
@@ -117,9 +128,10 @@ class Palette {
       this.canvas.removeEventListener('mousemove', this.bindMousemove)
       if (this.drawType === 'eraser') {
         if (this.selectItem) {
-          this.operateQue.push(this.drawType)
+          this.moveCallback('eraser', this.selectItem.id)
           this.eraser(this.selectItem.id)
-          this.gatherImage()
+          this.moveCallback('operateRecord', this.drawType)
+          this.operateRecord(this.drawType)
           return
         }
       }
@@ -130,14 +142,14 @@ class Palette {
           case 'line':
           case 'rect': {
             const id = this.drawItem.id
-            this.drawMap[id] = this.drawItem
-            this.operateQue.push(this.drawType)
-            this.gatherImage()
+            // this.drawMap[id] = this.drawItem
+            this.moveCallback('operateRecord', this.drawType, id, this.drawItem)
+            this.operateRecord(this.drawType)
             break
           }
           case 'move': {
-            this.operateQue.push(this.drawType)
-            this.gatherImage()
+            this.moveCallback('operateRecord', this.drawType)
+            this.operateRecord(this.drawType)
             break
           }
         }
@@ -173,7 +185,6 @@ class Palette {
 
   // 绘制条件改变
   changeWay ({ type, color, lineWidth, sides }) {
-    console.log(type)
     this.reSelect()
     this.drawType = type || this.drawType // 绘制形状
     this.drawColor = color || this.drawColor // 绘制颜色

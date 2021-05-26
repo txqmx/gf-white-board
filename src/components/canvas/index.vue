@@ -6,6 +6,7 @@
 
 <script>
 import { Palette } from '../lib/palette'
+import io from 'socket.io-client'
 export default {
   name: 'index',
   props: {
@@ -27,6 +28,12 @@ export default {
     }
   },
   mounted () {
+    this.socket = io.connect('0.0.0.0:3000')
+    this.socket.emit('join', 123456)
+    this.socket.on('message', (data, val) => {
+      console.log(data, val)
+      this.palette[data](...val)
+    })
     this.initPalette()
   },
   methods: {
@@ -40,8 +47,7 @@ export default {
       })
     },
     moveCallback (data, ...val) {
-      console.log(data, val)
-      // this.palette.getImageData()
+      this.socket.emit('message', 123456, data, val)
     },
     // 改变绘制条件 type, color, lineWidth, sides
     changeWay ({ type, color, lineWidth, sides }) {
@@ -49,8 +55,7 @@ export default {
     },
     // 切换工具
     selectTool ({ action }) {
-      console.log(action)
-      // this.moveCallback(action)
+      this.moveCallback(action)
       this.palette[action]()
     }
   }

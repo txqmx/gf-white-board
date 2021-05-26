@@ -17,7 +17,7 @@ class Line {
   }
 
   // 绘制线条
-  drawLine (canvas, lastDot, nowDot) {
+  drawing (canvas, lastDot, nowDot) {
     canvas.beginPath()
     canvas.lineCap = 'round'
     canvas.lineJoin = 'round'
@@ -78,7 +78,7 @@ class Rect {
   }
 
   // 绘制线条
-  drawRect (canvas, width, height) {
+  drawing (canvas, width, height) {
     canvas.beginPath()
     canvas.lineWidth = this.lineWidth
     canvas.strokeStyle = this.lineColor
