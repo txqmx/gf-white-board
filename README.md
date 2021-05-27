@@ -1,24 +1,19 @@
 # gf-white-board
 
-## Project setup
-```
-npm install
-```
+todo
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+- [x] 基本绘制
+- [x] 橡皮擦（选中删除）
+- [x] 清除
+- [x] 回退
+- [x] 图形（正方形）
+- [x] 图形移动
+- [x] 涂鸦操作记录
+- [x] 接信令
+- [ ] 操作回放
+- [ ] 自定义鼠标
+- [ ] 交互分层
+- [ ] 文本框
+- [ ] 交互框
+- [ ] 图形放大缩小
+- [ ] 多白板
