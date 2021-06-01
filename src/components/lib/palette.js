@@ -1,4 +1,5 @@
 import { Line, Rect } from './grapLib'
+import { dataFactory } from './utils'
 
 class Palette {
   constructor (canvas, { drawType, drawColor, lineWidth, moveCallback }) {
@@ -14,7 +15,11 @@ class Palette {
     this.drawType = drawType || 'line' // 绘制形状
     this.drawColor = drawColor || '#000000' // 绘制颜色
     this.lineWidth = lineWidth || 2 // 线条宽度
-    this.moveCallback = moveCallback || function () {} // 鼠标移动的回调
+    this.moveCallback = function (type, ...params) {
+      if (moveCallback) {
+        moveCallback(dataFactory(type, ...params))
+      }
+    } // 鼠标移动的回调
     this.bindMousemove = this.onMouseMove.bind(this) // 解决问题: 1.addEventListener 的this指向问题 2.bind绑定后为新函数，无法移除监听
     this.bindMousedown = this.onMouseDown.bind(this)
     this.bindMouseup = this.onMouseUp.bind(this)
@@ -78,6 +83,7 @@ class Palette {
     switch (this.drawType) {
       case 'line' : {
         this.drawing(this.drawItem, this.lastDot, nowDot)
+
         this.moveCallback('drawing', this.drawItem, this.lastDot, nowDot)
         this.lastDot = nowDot
         break
@@ -234,6 +240,7 @@ class Palette {
     this.imgData = []
     this.drawMap = {}
     this.operateQue = []
+    this.recycle = []
     this.paint.clearRect(0, 0, this.width, this.height)
     this.paint.fillStyle = '#fff'
     this.paint.fillRect(0, 0, this.width, this.height)
@@ -262,6 +269,35 @@ class Palette {
       this.operateQue.pop()
       this.paint.putImageData(this.imgData[this.index], 0, 0)
     }
+  }
+
+  // 回放
+  replay (dataList) {
+    if (dataList.length === 0) return
+    const timeOffset = 16.7 // 一帧的时间间隔大概为16.7ms
+    let startTime = JSON.parse(dataList[0]).timestamp // 开始时间戳
+    const state = () => {
+      const action = JSON.parse(dataList[0])
+      if (startTime >= action.timestamp) {
+        dataList.shift()
+        this[action.type](...action.params)
+      }
+      startTime += timeOffset // 最大程度的模拟真实的时间差
+      // 当还有动作时，继续调用requestAnimationFrame()
+      if (dataList.length > 0) {
+        requestAnimationFrame(state)
+      }
+    }
+    state()
+  }
+
+  // 销毁
+  destroy () {
+    this.clear()
+    this.canvas.removeEventListener('mousedown', this.bindMousedown)
+    document.removeEventListener('mouseup', this.bindMouseup)
+    this.canvas = null
+    this.paint = null
   }
 }
 

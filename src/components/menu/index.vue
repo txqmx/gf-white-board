@@ -60,6 +60,8 @@
     <div class="menu-item" @click="selectType('back')">
       <img src="./img/back.png">
     </div>
+    <el-button @click="record">录制</el-button>
+    <el-button @click="replay">回放</el-button>
   </div>
 </template>
 
@@ -129,6 +131,12 @@ export default {
         lineColor: this.lineColor,
         lineWidth: this.lineWidth
       })
+    },
+    record () {
+      this.$emit('record')
+    },
+    replay () {
+      this.$emit('replay')
     }
   }
 }

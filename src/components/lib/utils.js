@@ -5,3 +5,11 @@ export function uuid () {
     return v.toString(16)
   })
 }
+
+export function dataFactory (type, ...params) {
+  return {
+    type: type,
+    params: params,
+    timestamp: new Date().getTime() + 16
+  }
+}

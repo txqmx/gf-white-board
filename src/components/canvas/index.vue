@@ -24,15 +24,16 @@ export default {
       palette: '',
       drawColor: '#000000',
       drawType: 'line',
-      lineWidth: 2
+      lineWidth: 2,
+      recordList: []
     }
   },
   mounted () {
     this.socket = io.connect('0.0.0.0:3000')
     this.socket.emit('join', 123456)
     this.socket.on('message', (data, val) => {
-      console.log(data, val)
-      this.palette[data](...val)
+      // console.log(data, val)
+      // this.palette[data](...val)
     })
     this.initPalette()
   },
@@ -46,8 +47,10 @@ export default {
         moveCallback: this.moveCallback
       })
     },
-    moveCallback (data, ...val) {
-      this.socket.emit('message', 123456, data, val)
+    moveCallback (data) {
+      console.log(data)
+      this.recordList.push(JSON.stringify(data))
+      // this.socket.emit('message', 123456, data, val)
     },
     // 改变绘制条件 type, color, lineWidth, sides
     changeWay ({ type, color, lineWidth, sides }) {
@@ -57,6 +60,15 @@ export default {
     selectTool ({ action }) {
       this.moveCallback(action)
       this.palette[action]()
+    },
+    record () {
+      console.log('录制')
+    },
+    replay () {
+      this.palette.destroy()
+      this.initPalette()
+      this.palette.replay(this.recordList)
+      console.log('回放')
     }
   }
 }

@@ -1,7 +1,12 @@
 <template>
   <div v-if="isInit">
     <white-canvas ref="whiteCanvas" :width="canvasWidth" :height="canvasHeight"></white-canvas>
-    <white-menu @changeLineStyle="changeLineStyle" @selectTool="selectTool"></white-menu>
+    <white-menu
+      @changeLineStyle="changeLineStyle"
+      @selectTool="selectTool"
+      @record="record"
+      @replay="replay"
+    ></white-menu>
   </div>
 </template>
 
@@ -35,6 +40,12 @@ export default {
       this.$refs.whiteCanvas.selectTool({
         action: action
       })
+    },
+    record () {
+      this.$refs.whiteCanvas.record()
+    },
+    replay () {
+      this.$refs.whiteCanvas.replay()
     }
   }
 }
